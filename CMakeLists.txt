@@ -1,116 +1,253 @@
-# include 另外一个cmake 配置
-#INCLUDE(file1 [OPTIONAL])
+cmake_minimum_required(VERSION 3.23)
+project(root)
 
-cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 14)
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-project(minidb)
+include_directories(source/miniob/deps/common)
+include_directories(source/miniob/deps/common/conf)
+include_directories(source/miniob/deps/common/io)
+include_directories(source/miniob/deps/common/lang)
+include_directories(source/miniob/deps/common/log)
+include_directories(source/miniob/deps/common/math)
+include_directories(source/miniob/deps/common/metrics)
+include_directories(source/miniob/deps/common/mm)
+include_directories(source/miniob/deps/common/os)
+include_directories(source/miniob/deps/common/seda)
+include_directories(source/miniob/deps/common/time)
+include_directories(source/miniob/src/observer)
+include_directories(source/miniob/src/observer/event)
+include_directories(source/miniob/src/observer/net)
+include_directories(source/miniob/src/observer/session)
+include_directories(source/miniob/src/observer/sql/executor)
+include_directories(source/miniob/src/observer/sql/expr)
+include_directories(source/miniob/src/observer/sql/operator)
+include_directories(source/miniob/src/observer/sql/optimizer)
+include_directories(source/miniob/src/observer/sql/parser)
+include_directories(source/miniob/src/observer/sql/plan_cache)
+include_directories(source/miniob/src/observer/sql/query_cache)
+include_directories(source/miniob/src/observer/sql/stmt)
+include_directories(source/miniob/src/observer/storage/common)
+include_directories(source/miniob/src/observer/storage/default)
+include_directories(source/miniob/src/observer/storage/index)
+include_directories(source/miniob/src/observer/storage/mem)
+include_directories(source/miniob/src/observer/storage/trx)
+include_directories(source/miniob/src/observer/util)
+include_directories(source/miniob/unitest)
 
-MESSAGE(STATUS "This is SOURCE dir " ${test_SOURCE_DIR})
-MESSAGE(STATUS "This is BINARY dir " ${test_BINARY_DIR})
-MESSAGE(STATUS "This is Project source dir " ${PROJECT_SOURCE_DIR})
-MESSAGE(STATUS "This is PROJECT_BINARY_DIR dir " ${PROJECT_BINARY_DIR})
-
-
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-#SET(LIBRARY_OUTPUT_PATH <路径>)
-
-MESSAGE(STATUS "HOME dir: $ENV{HOME}")
-#SET(ENV{变量名} 值)
-IF(WIN32)
-    MESSAGE(STATUS "This is windows.")
-    ADD_DEFINITIONS(-DWIN32)
-ELSEIF(WIN64)
-        MESSAGE(STATUS "This is windows.")
-        ADD_DEFINITIONS(-DWIN64)
-ELSEIF(APPLE)
-    MESSAGE(STATUS "This is apple")
-    # normally __MACH__ has already been defined
-    ADD_DEFINITIONS(-D__MACH__ )
-ELSEIF(UNIX)
-    MESSAGE(STATUS "This is UNIX")
-    ADD_DEFINITIONS(-DUNIX -DLINUX)
-ELSE()
-    MESSAGE(STATUS "This is UNKNOW OS")
-ENDIF(WIN32)
-
-# This is for clangd plugin for vscode
-#SET(CMAKE_COMMON_FLAGS ${CMAKE_COMMON_FLAGS} " -Wstring-plus-int -Wsizeof-array-argument -Wunused-variable -Wmissing-braces")
-SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -Wall -DCMAKE_EXPORT_COMPILE_COMMANDS=1")
-IF(DEBUG)
-    MESSAGE("DEBUG has been set as TRUE ${DEBUG}")
-    #"${CMAKE_COMMON_FLAGS}  -O0 -g "  ${CMAKE_COMMON_FLAGS}最好在""以内，防止被cmake 增加了;
-    SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS}  -O0 -g -DDEBUG ")
-    ADD_DEFINITIONS(-DENABLE_DEBUG)
-ELSEIF(NOT DEFINED ENV{DEBUG})
-    MESSAGE("Disable debug")
-    SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS}  -O2 -g ")
-ELSE()
-    MESSAGE("Enable debug")
-    SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS}  -O0 -g -DDEBUG")
-    ADD_DEFINITIONS(-DENABLE_DEBUG)
-ENDIF()
-SET(CMAKE_CXX_FLAGS ${CMAKE_COMMON_FLAGS})
-SET(CMAKE_C_FLAGS ${CMAKE_COMMON_FLAGS})
-MESSAGE("CMAKE_CXX_FLAGS is " ${CMAKE_CXX_FLAGS})
-
-
-IF (CMAKE_INSTALL_PREFIX)
-    MESSAGE("CMAKE_INSTALL_PREFIX has been set as " ${CMAKE_INSTALL_PREFIX} )
-ELSEIF(DEFINED ENV{CMAKE_INSTALL_PREFIX})
-    SET(CMAKE_INSTALL_PREFIX $ENV{CMAKE_INSTALL_PREFIX})
-ELSE()
-    SET(CMAKE_INSTALL_PREFIX /tmp/${PROJECT_NAME})
-ENDIF()
-MESSAGE("Install target dir is " ${CMAKE_INSTALL_PREFIX})
-
-
-# ADD_SUBDIRECTORY(src bin)  bin 为目标目录， 可以省略
-ADD_SUBDIRECTORY(deps)
-ADD_SUBDIRECTORY(src)
-ADD_SUBDIRECTORY(test/perf)
-
-OPTION(WITH_UNIT_TESTS "Compile miniob with unit tests" ON)
-
-IF(WITH_UNIT_TESTS)
-    ADD_SUBDIRECTORY(unitest)
-ENDIF()
-
-# install 准备安装的目录是cmakefile 的当前目录， 不是build 后生成的目录
-# Files 默认权限OWNER_WRITE, OWNER_READ, GROUP_READ,和WORLD_READ，即644权限
-# INSTALL(FILES docs/README DESTINATION ./  )
-# INSTALL(DIRECTORY docs DESTINATION ./
-#        PATTERN "README" EXCLUDE)
-#  PERMISSIONS 可以直接替换
-#INSTALL(DIRECTORY bin DESTINATION ./
-#        FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_READ
-#        DIRECTORY_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_READ WORLD_EXECUTE)
-
-INSTALL(DIRECTORY etc DESTINATION .
-		FILE_PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
-
-#INSTALL([[SCRIPT <file>] [CODE <code>]] [...])
-# script 表示安装时，调用cmake 脚步
-# code 表示安装时，执行cmake 命令， 例如
-INSTALL(CODE "MESSAGE(\"Sample install message.\")")
-# EXEC_PROGRAM make时执行命令
-#EXEC_PROGRAM(Executable [directory in which to run]
-#        [ARGS <arguments to executable>]
-#        [OUTPUT_VARIABLE <var>]
-
-
-
-
-# ADD_TEST与ENABLE_TESTING 参考书籍
-
-#EXEC_PROGRAM(Executable [directory in which to run]
-#        [ARGS <arguments to executable>]
-#        [OUTPUT_VARIABLE <var>]
-#        [RETURN_VALUE <var>])
-# 生产make时，执行
-#EXEC_PROGRAM(ls ARGS "*.c" OUTPUT_VARIABLE LS_OUTPUT RETURN_VALUE
-#        LS_RVALUE)
-#IF(not LS_RVALUE)
-#    MESSAGE(STATUS "ls result: " ${LS_OUTPUT})
-#ENDIF(not LS_RVALUE)
+add_executable(root
+        source/miniob/deps/common/conf/ini.cpp
+        source/miniob/deps/common/conf/ini.h
+        source/miniob/deps/common/io/io.cpp
+        source/miniob/deps/common/io/io.h
+        source/miniob/deps/common/io/roll_select_dir.cpp
+        source/miniob/deps/common/io/roll_select_dir.h
+        source/miniob/deps/common/io/select_dir.h
+        source/miniob/deps/common/lang/bitmap.cpp
+        source/miniob/deps/common/lang/bitmap.h
+        source/miniob/deps/common/lang/defer.h
+        source/miniob/deps/common/lang/mutex.cpp
+        source/miniob/deps/common/lang/mutex.h
+        source/miniob/deps/common/lang/serializable.h
+        source/miniob/deps/common/lang/string.cpp
+        source/miniob/deps/common/lang/string.h
+        source/miniob/deps/common/log/log.cpp
+        source/miniob/deps/common/log/log.h
+        source/miniob/deps/common/math/md5.cpp
+        source/miniob/deps/common/math/md5.h
+        source/miniob/deps/common/math/random_generator.cpp
+        source/miniob/deps/common/math/random_generator.h
+        source/miniob/deps/common/math/regex.cpp
+        source/miniob/deps/common/math/regex.h
+        source/miniob/deps/common/metrics/console_reporter.cpp
+        source/miniob/deps/common/metrics/console_reporter.h
+        source/miniob/deps/common/metrics/histogram_snapshot.cpp
+        source/miniob/deps/common/metrics/histogram_snapshot.h
+        source/miniob/deps/common/metrics/log_reporter.cpp
+        source/miniob/deps/common/metrics/log_reporter.h
+        source/miniob/deps/common/metrics/metric.h
+        source/miniob/deps/common/metrics/metrics.cpp
+        source/miniob/deps/common/metrics/metrics.h
+        source/miniob/deps/common/metrics/metrics_registry.cpp
+        source/miniob/deps/common/metrics/metrics_registry.h
+        source/miniob/deps/common/metrics/reporter.cpp
+        source/miniob/deps/common/metrics/reporter.h
+        source/miniob/deps/common/metrics/reservoir.cpp
+        source/miniob/deps/common/metrics/reservoir.h
+        source/miniob/deps/common/metrics/sampler.cpp
+        source/miniob/deps/common/metrics/sampler.h
+        source/miniob/deps/common/metrics/snapshot.h
+        source/miniob/deps/common/metrics/timer_snapshot.cpp
+        source/miniob/deps/common/metrics/timer_snapshot.h
+        source/miniob/deps/common/metrics/uniform_reservoir.cpp
+        source/miniob/deps/common/metrics/uniform_reservoir.h
+        source/miniob/deps/common/mm/debug_new.h
+        source/miniob/deps/common/mm/mem.h
+        source/miniob/deps/common/mm/mem_pool.cpp
+        source/miniob/deps/common/mm/mem_pool.h
+        source/miniob/deps/common/os/os.cpp
+        source/miniob/deps/common/os/os.h
+        source/miniob/deps/common/os/path.cpp
+        source/miniob/deps/common/os/path.h
+        source/miniob/deps/common/os/pidfile.cpp
+        source/miniob/deps/common/os/pidfile.h
+        source/miniob/deps/common/os/process.cpp
+        source/miniob/deps/common/os/process.h
+        source/miniob/deps/common/os/process_param.cpp
+        source/miniob/deps/common/os/process_param.h
+        source/miniob/deps/common/os/signal.cpp
+        source/miniob/deps/common/os/signal.h
+        source/miniob/deps/common/seda/callback.cpp
+        source/miniob/deps/common/seda/callback.h
+        source/miniob/deps/common/seda/class_factory.h
+        source/miniob/deps/common/seda/event_dispatcher.cpp
+        source/miniob/deps/common/seda/event_dispatcher.h
+        source/miniob/deps/common/seda/example_stage.cpp
+        source/miniob/deps/common/seda/example_stage.h
+        source/miniob/deps/common/seda/init.cpp
+        source/miniob/deps/common/seda/init.h
+        source/miniob/deps/common/seda/kill_thread.cpp
+        source/miniob/deps/common/seda/kill_thread.h
+        source/miniob/deps/common/seda/metrics_report_event.cpp
+        source/miniob/deps/common/seda/metrics_report_event.h
+        source/miniob/deps/common/seda/metrics_stage.cpp
+        source/miniob/deps/common/seda/metrics_stage.h
+        source/miniob/deps/common/seda/seda_config.cpp
+        source/miniob/deps/common/seda/seda_config.h
+        source/miniob/deps/common/seda/seda_defs.h
+        source/miniob/deps/common/seda/stage.cpp
+        source/miniob/deps/common/seda/stage.h
+        source/miniob/deps/common/seda/stage_event.cpp
+        source/miniob/deps/common/seda/stage_event.h
+        source/miniob/deps/common/seda/stage_factory.h
+        source/miniob/deps/common/seda/thread_pool.cpp
+        source/miniob/deps/common/seda/thread_pool.h
+        source/miniob/deps/common/seda/timer_stage.cpp
+        source/miniob/deps/common/seda/timer_stage.h
+        source/miniob/deps/common/time/datetime.cpp
+        source/miniob/deps/common/time/datetime.h
+        source/miniob/deps/common/time/timeout_info.cpp
+        source/miniob/deps/common/time/timeout_info.h
+        source/miniob/deps/common/defs.h
+        source/miniob/deps/common/version.h
+        source/miniob/src/obclient/client.cpp
+        source/miniob/src/observer/event/optimize_event.h
+        source/miniob/src/observer/event/session_event.cpp
+        source/miniob/src/observer/event/session_event.h
+        source/miniob/src/observer/event/sql_event.cpp
+        source/miniob/src/observer/event/sql_event.h
+        source/miniob/src/observer/event/storage_event.h
+        source/miniob/src/observer/net/connection_context.h
+        source/miniob/src/observer/net/server.cpp
+        source/miniob/src/observer/net/server.h
+        source/miniob/src/observer/net/server_param.h
+        source/miniob/src/observer/session/session.cpp
+        source/miniob/src/observer/session/session.h
+        source/miniob/src/observer/session/session_stage.cpp
+        source/miniob/src/observer/session/session_stage.h
+        source/miniob/src/observer/sql/executor/execute_stage.cpp
+        source/miniob/src/observer/sql/executor/execute_stage.h
+        source/miniob/src/observer/sql/expr/expression.cpp
+        source/miniob/src/observer/sql/expr/expression.h
+        source/miniob/src/observer/sql/expr/tuple.h
+        source/miniob/src/observer/sql/expr/tuple_cell.cpp
+        source/miniob/src/observer/sql/expr/tuple_cell.h
+        source/miniob/src/observer/sql/operator/delete_operator.cpp
+        source/miniob/src/observer/sql/operator/delete_operator.h
+        source/miniob/src/observer/sql/operator/index_scan_operator.cpp
+        source/miniob/src/observer/sql/operator/index_scan_operator.h
+        source/miniob/src/observer/sql/operator/insert_operator.cpp
+        source/miniob/src/observer/sql/operator/insert_operator.h
+        source/miniob/src/observer/sql/operator/join_operator.h
+        source/miniob/src/observer/sql/operator/operator.h
+        source/miniob/src/observer/sql/operator/predicate_operator.cpp
+        source/miniob/src/observer/sql/operator/predicate_operator.h
+        source/miniob/src/observer/sql/operator/project_operator.cpp
+        source/miniob/src/observer/sql/operator/project_operator.h
+        source/miniob/src/observer/sql/operator/table_scan_operator.cpp
+        source/miniob/src/observer/sql/operator/table_scan_operator.h
+        source/miniob/src/observer/sql/optimizer/optimize_stage.cpp
+        source/miniob/src/observer/sql/optimizer/optimize_stage.h
+        source/miniob/src/observer/sql/parser/lex.yy.c
+        source/miniob/src/observer/sql/parser/lex.yy.h
+        source/miniob/src/observer/sql/parser/parse.cpp
+        source/miniob/src/observer/sql/parser/parse.h
+        source/miniob/src/observer/sql/parser/parse_defs.h
+        source/miniob/src/observer/sql/parser/parse_stage.cpp
+        source/miniob/src/observer/sql/parser/parse_stage.h
+        source/miniob/src/observer/sql/parser/resolve_stage.cpp
+        source/miniob/src/observer/sql/parser/resolve_stage.h
+        source/miniob/src/observer/sql/parser/yacc_sql.tab.c
+        source/miniob/src/observer/sql/parser/yacc_sql.tab.h
+        source/miniob/src/observer/sql/plan_cache/plan_cache_stage.cpp
+        source/miniob/src/observer/sql/plan_cache/plan_cache_stage.h
+        source/miniob/src/observer/sql/query_cache/query_cache_stage.cpp
+        source/miniob/src/observer/sql/query_cache/query_cache_stage.h
+        source/miniob/src/observer/sql/stmt/delete_stmt.cpp
+        source/miniob/src/observer/sql/stmt/delete_stmt.h
+        source/miniob/src/observer/sql/stmt/filter_stmt.cpp
+        source/miniob/src/observer/sql/stmt/filter_stmt.h
+        source/miniob/src/observer/sql/stmt/insert_stmt.cpp
+        source/miniob/src/observer/sql/stmt/insert_stmt.h
+        source/miniob/src/observer/sql/stmt/select_stmt.cpp
+        source/miniob/src/observer/sql/stmt/select_stmt.h
+        source/miniob/src/observer/sql/stmt/stmt.cpp
+        source/miniob/src/observer/sql/stmt/stmt.h
+        source/miniob/src/observer/sql/stmt/update_stmt.cpp
+        source/miniob/src/observer/sql/stmt/update_stmt.h
+        source/miniob/src/observer/storage/common/condition_filter.cpp
+        source/miniob/src/observer/storage/common/condition_filter.h
+        source/miniob/src/observer/storage/common/db.cpp
+        source/miniob/src/observer/storage/common/db.h
+        source/miniob/src/observer/storage/common/field.h
+        source/miniob/src/observer/storage/common/field_meta.cpp
+        source/miniob/src/observer/storage/common/field_meta.h
+        source/miniob/src/observer/storage/common/index_meta.cpp
+        source/miniob/src/observer/storage/common/index_meta.h
+        source/miniob/src/observer/storage/common/meta_util.cpp
+        source/miniob/src/observer/storage/common/meta_util.h
+        source/miniob/src/observer/storage/common/record.h
+        source/miniob/src/observer/storage/common/record_manager.cpp
+        source/miniob/src/observer/storage/common/record_manager.h
+        source/miniob/src/observer/storage/common/table.cpp
+        source/miniob/src/observer/storage/common/table.h
+        source/miniob/src/observer/storage/common/table_meta.cpp
+        source/miniob/src/observer/storage/common/table_meta.h
+        source/miniob/src/observer/storage/default/default_handler.cpp
+        source/miniob/src/observer/storage/default/default_handler.h
+        source/miniob/src/observer/storage/default/default_storage_stage.cpp
+        source/miniob/src/observer/storage/default/default_storage_stage.h
+        source/miniob/src/observer/storage/default/disk_buffer_pool.cpp
+        source/miniob/src/observer/storage/default/disk_buffer_pool.h
+        source/miniob/src/observer/storage/index/bplus_tree.cpp
+        source/miniob/src/observer/storage/index/bplus_tree.h
+        source/miniob/src/observer/storage/index/bplus_tree_index.cpp
+        source/miniob/src/observer/storage/index/bplus_tree_index.h
+        source/miniob/src/observer/storage/index/index.cpp
+        source/miniob/src/observer/storage/index/index.h
+        source/miniob/src/observer/storage/mem/mem_storage_stage.cpp
+        source/miniob/src/observer/storage/mem/mem_storage_stage.h
+        source/miniob/src/observer/storage/trx/trx.cpp
+        source/miniob/src/observer/storage/trx/trx.h
+        source/miniob/src/observer/util/comparator.cpp
+        source/miniob/src/observer/util/comparator.h
+        source/miniob/src/observer/defs.h
+        source/miniob/src/observer/ini_setting.h
+        source/miniob/src/observer/init.cpp
+        source/miniob/src/observer/init.h
+        source/miniob/src/observer/main.cpp
+        source/miniob/src/observer/rc.cpp
+        source/miniob/src/observer/rc.h
+        source/miniob/test/perf/client_performance_test.cpp
+        source/miniob/unitest/bitmap_test.cpp
+        source/miniob/unitest/bp_manager_test.cpp
+        source/miniob/unitest/bplus_tree_test.cpp
+        source/miniob/unitest/log_test.cpp
+        source/miniob/unitest/log_test.h
+        source/miniob/unitest/md5_test.cpp
+        source/miniob/unitest/md5_test.h
+        source/miniob/unitest/mem_pool_test.cpp
+        source/miniob/unitest/path_test.cpp
+        source/miniob/unitest/pidfile_test.cpp
+        source/miniob/unitest/rc_test.cpp
+        source/miniob/unitest/record_manager_test.cpp
+        source/miniob/unitest/thread_test.h)
