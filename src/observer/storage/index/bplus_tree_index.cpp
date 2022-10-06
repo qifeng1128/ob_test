@@ -88,6 +88,12 @@ RC BplusTreeIndex::close()
   return RC::SUCCESS;
 }
 
+RC BplusTreeIndex::drop(){
+  RC rc = index_handler_.drop();
+  return rc;
+}
+
+
 RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)
 {
   return index_handler_.insert_entry(record + field_meta_.offset(), rid);
@@ -96,6 +102,10 @@ RC BplusTreeIndex::insert_entry(const char *record, const RID *rid)
 RC BplusTreeIndex::delete_entry(const char *record, const RID *rid)
 {
   return index_handler_.delete_entry(record + field_meta_.offset(), rid);
+}
+
+RC BplusTreeIndex::update_entry(const char *record, const RID *rid){
+  return index_handler_.update_entry(record + field_meta_.offset(), rid);
 }
 
 IndexScanner *BplusTreeIndex::create_scanner(const char *left_key, int left_len, bool left_inclusive,

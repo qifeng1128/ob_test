@@ -158,12 +158,6 @@ void DefaultStorageStage::handle_event(StageEvent *event)
 
   char response[256];
   switch (sql->flag) {
-      case SCF_DROP_TABLE: {
-          const DropTable& drop_table = sql->sstr.drop_table; // 拿到要drop 的表
-          rc = handler_->drop_table(dbname,drop_table.relation_name); // 调用drop table接口，drop table要在handler中实现
-          snprintf(response,sizeof(response),"%s\n", rc == RC::SUCCESS ? "SUCCESS" : "FAILURE"); // 返回结果，带不带换行符都可以
-      }
-      break;
     case SCF_LOAD_DATA: {
       /*
         从文件导入数据，如果做性能测试，需要保持这些代码可以正常工作
@@ -260,6 +254,9 @@ RC insert_record_from_file(
       } break;
       case CHARS: {
         value_init_string(&record_values[i], file_value.c_str());
+      } break;
+      case DATES: {
+        value_init_date(&record_values[i], file_value.c_str());
       } break;
       default: {
         errmsg << "Unsupported field type to loading: " << field->type();

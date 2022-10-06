@@ -32,7 +32,6 @@ RC PredicateOperator::next()
 {
   RC rc = RC::SUCCESS;
   Operator *oper = children_[0];
-  
   while (RC::SUCCESS == (rc = oper->next())) {
     Tuple *tuple = oper->current_tuple();
     if (nullptr == tuple) {
@@ -40,7 +39,6 @@ RC PredicateOperator::next()
       LOG_WARN("failed to get tuple from operator");
       break;
     }
-
     if (do_predicate(static_cast<RowTuple &>(*tuple))) {
       return rc;
     }
@@ -73,7 +71,10 @@ bool PredicateOperator::do_predicate(RowTuple &tuple)
     TupleCell right_cell;
     left_expr->get_value(tuple, left_cell);
     right_expr->get_value(tuple, right_cell);
-
+    
+    if(left_cell.attr_type() == UNDEFINED || right_cell.attr_type() == UNDEFINED){
+      return true;
+    }
     const int compare = left_cell.compare(right_cell);
     bool filter_result = false;
     switch (comp) {

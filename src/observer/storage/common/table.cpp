@@ -15,6 +15,7 @@ See the Mulan PSL v2 for more details. */
 #include <limits.h>
 #include <string.h>
 #include <algorithm>
+#include <vector>
 
 #include "common/defs.h"
 #include "storage/common/table.h"
@@ -48,36 +49,6 @@ Table::~Table()
   indexes_.clear();
 
   LOG_INFO("Table has been closed: %s", name());
-}
-
-RC Table::drop(const char* dir) {
-    RC rc = sync();//刷新所有脏页
-
-    if(rc != RC::SUCCESS) return rc;
-
-    std::string path = table_meta_file(dir, name());
-    if(unlink(path.c_str()) != 0) {
-        LOG_ERROR("Failed to remove meta file=%s, errno=%d", path.c_str(), errno);
-        return RC::GENERIC_ERROR;
-    }
-
-    std::string data_file = table_data_file(dir,name());
-    if(unlink(data_file.c_str()) != 0) { // 删除描述表元数据的文件
-        LOG_ERROR("Failed to remove data file=%s, errno=%d", data_file.c_str(), errno);
-        return RC::GENERIC_ERROR;
-    }
-
-    const int index_num = table_meta_.index_num();
-    for (int i = 0; i < index_num; i++) {  // 清理所有的索引相关文件数据与索引元数据
-        ((BplusTreeIndex*)indexes_[i])->close();
-        const IndexMeta* index_meta = table_meta_.index(i);
-        std::string index_file = table_index_file(dir, name(), index_meta->name());
-        if(unlink(index_file.c_str()) != 0) {
-            LOG_ERROR("Failed to remove index file=%s, errno=%d", index_file.c_str(), errno);
-            return RC::GENERIC_ERROR;
-        }
-    }
-    return RC::SUCCESS;
 }
 
 RC Table::create(
@@ -145,6 +116,27 @@ RC Table::create(
 
   base_dir_ = base_dir;
   LOG_INFO("Successfully create table %s:%s", base_dir, name);
+  return rc;
+}
+
+RC Table::drop(const char *path, const char *base_dir){
+  RC rc = RC::SUCCESS;
+  for(Index *index:indexes_){
+    index->drop();
+  }
+
+  delete record_handler_;
+  record_handler_ = nullptr;
+
+  std::string data_file = table_data_file(base_dir, this->name());
+  BufferPoolManager &bpm = BufferPoolManager::instance();
+  rc = bpm.remove_file(data_file.c_str());
+
+  int remove_ret = ::remove(path);
+  if(remove_ret != 0){
+    LOG_ERROR("Fail to remove %s when drop table %s", path, this->name());
+    return RC::GENERIC_ERROR;
+  }
   return rc;
 }
 
@@ -349,21 +341,20 @@ RC Table::make_record(int value_num, const Value *values, char *&record_out)
     }
   }
 
-  // 复制所有字段的值
+  // 复制所有字段的值  
   int record_size = table_meta_.record_size();
   char *record = new char[record_size];
-
   for (int i = 0; i < value_num; i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value &value = values[i];
     size_t copy_len = field->len();
-    if (field->type() == CHARS) {
+    if (field->type() == CHARS || field->type() == DATES) {
       const size_t data_len = strlen((const char *)value.data);
       if (copy_len > data_len) {
         copy_len = data_len + 1;
       }
     }
-    memcpy(record + field->offset(), value.data, copy_len);
+        memcpy(record + field->offset(), value.data, copy_len);
   }
 
   record_out = record;
@@ -638,7 +629,61 @@ RC Table::create_index(Trx *trx, const char *index_name, const char *attribute_n
 RC Table::update_record(Trx *trx, const char *attribute_name, const Value *value, int condition_num,
     const Condition conditions[], int *updated_count)
 {
-  return RC::GENERIC_ERROR;
+  if(nullptr == value || condition_num <= 0){
+    LOG_ERROR("Invalid argument. table name: %s, attribute_name: %s, condition num=%d, value=%p", name(), attribute_name, condition_num, value);
+    return RC::INVALID_ARGUMENT;
+  }
+  //TO_DO...
+  return RC::SUCCESS;
+
+
+  
+}
+
+RC Table::update_record(Trx *trx, Record *record, const char *attribute_name, const Value *value){
+  RC rc = RC::SUCCESS;
+  if (trx != nullptr) {
+      rc = trx->update_record(this, record, attribute_name, value);
+    } else {
+      const FieldMeta *field = table_meta_.field(attribute_name);
+      if(field->type() != value->type){
+        LOG_ERROR("Invalid value type. table name =%s, field name=%s, type=%d, but given=%d",
+          table_meta_.name(),
+          field->name(),
+          field->type(),
+          value->type);
+        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      }
+      size_t copy_len = field->len();
+      if (field->type() == CHARS || field->type() == DATES){
+        const size_t data_len = strlen((const char *)value->data);
+        if (copy_len > data_len) {
+          copy_len = data_len + 1;
+        }
+      }
+
+      memcpy(record->data() + field->offset(), value->data, copy_len);
+      rc = record_handler_->update_record(record);
+
+      //update index
+      if(isIndex(attribute_name)){
+        rc = update_entry_of_indexes(record->data(),record->rid());
+        if(rc != RC::SUCCESS){
+          LOG_ERROR("Failed to update index");
+        }
+        return rc;
+      }
+  }
+  return rc;
+}
+
+bool Table::isIndex(const char *attribute_name){
+  for(auto index: indexes_){
+    if(strcmp(index->index_meta().field(), attribute_name) == 0){
+      return true;
+    }
+  }
+  return false;
 }
 
 class RecordDeleter {
@@ -685,6 +730,7 @@ RC Table::delete_record(Trx *trx, ConditionFilter *filter, int *deleted_count)
 
 RC Table::delete_record(Trx *trx, Record *record)
 {
+  LOG_INFO("record: %s", record->data());
   RC rc = RC::SUCCESS;
   if (trx != nullptr) {
     rc = trx->delete_record(this, record);
@@ -758,6 +804,19 @@ RC Table::delete_entry_of_indexes(const char *record, const RID &rid, bool error
     }
   }
   return rc;
+}
+
+RC Table::update_entry_of_indexes(const char *record, const RID &rid){
+  RC rc = RC::SUCCESS;
+  for (Index *index: indexes_) {
+    rc = index->update_entry(record, &rid);
+    if(rc != RC::SUCCESS){
+      LOG_ERROR("Failed to update index %s, table %s", index->index_meta().name(), name());
+    }
+    return rc;
+  }
+  return rc;
+
 }
 
 Index *Table::find_index(const char *index_name) const
@@ -849,7 +908,7 @@ IndexScanner *Table::find_index_for_scan(const DefaultConditionFilter &filter)
   }
   }
 
-  if (filter.attr_type() == CHARS) {
+  if (filter.attr_type() == CHARS || filter.attr_type() == DATES) {
     left_len = left_key != nullptr ? strlen(left_key) : 0;
     right_len = right_key != nullptr ? strlen(right_key) : 0;
   }

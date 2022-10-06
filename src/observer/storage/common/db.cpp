@@ -52,25 +52,6 @@ RC Db::init(const char *name, const char *dbpath)
   return open_all_tables();
 }
 
-RC Db::drop_table(const char* table_name)
-{
-    RC rc = RC::SUCCESS;
-    // 判断数据库中是否存在表，先找到对应的表
-    auto it = opened_tables_.find(table_name);
-    if (it == opened_tables_.end()){
-        return RC::SCHEMA_TABLE_NOT_EXIST;   // 找不到表，要返回错误，测试程序中也会校验这种场景
-    }
-    // 删除表格
-    Table *table = it->second;
-    rc = table->drop(path_.c_str()); // 让表自己销毁资源
-    if (rc != RC::SUCCESS){
-        return rc;
-    }
-    opened_tables_.erase(table_name);  // 删除成功的话，从表list中将它删除
-    delete table;
-    return rc;
-}
-
 RC Db::create_table(const char *table_name, int attribute_count, const AttrInfo *attributes)
 {
   RC rc = RC::SUCCESS;
@@ -93,6 +74,22 @@ RC Db::create_table(const char *table_name, int attribute_count, const AttrInfo 
   opened_tables_[table_name] = table;
   LOG_INFO("Create table success. table name=%s", table_name);
   return RC::SUCCESS;
+}
+
+RC Db::drop_table(const char *table_name)
+{
+  RC rc = RC::SUCCESS;
+  Table *table = find_table(table_name);
+  if(table == nullptr){
+    LOG_INFO("table not exist");
+    return RC::SCHEMA_TABLE_NOT_EXIST;
+  }
+  std::string table_file_path = table_meta_file(path_.c_str(), table_name);
+  table->drop(table_file_path.c_str(), path_.c_str());
+  opened_tables_.erase(std::string(table_name));
+
+  return rc;
+
 }
 
 Table *Db::find_table(const char *table_name) const

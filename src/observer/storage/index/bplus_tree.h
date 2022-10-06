@@ -54,6 +54,9 @@ public:
     case CHARS: {
       return compare_string((void *)v1, attr_length_, (void *)v2, attr_length_);
     }
+    case DATES: {
+      return compare_date((void *)v1, (void *)v2);
+    }
     default:{
       LOG_ERROR("unknown attr type. %d", attr_type_);
       abort();
@@ -123,6 +126,16 @@ public:
 	str.push_back(v[i]);
       }
       return str;
+    }
+    case DATES: {
+      std::string str;
+      for (int i = 0; i < attr_length_; i++) {
+	if (v[i] == 0) {
+	  break;
+	}
+	str.push_back(v[i]);
+      }
+      return str; 
     }
     default:{
       LOG_ERROR("unknown attr type. %d", attr_type_);
@@ -399,7 +412,7 @@ public:
    * 关闭句柄indexHandle对应的索引文件
    */
   RC close();
-
+  RC drop();
   /**
    * 此函数向IndexHandle对应的索引中插入一个索引项。
    * 参数user_key指向要插入的属性值，参数rid标识该索引项对应的元组，
@@ -414,6 +427,8 @@ public:
    * @note 这里假设user_key的内存大小与attr_length 一致
    */
   RC delete_entry(const char *user_key, const RID *rid);
+
+  RC update_entry(const char *user_key, const RID *rid);
 
   bool is_empty() const;
 

@@ -44,7 +44,8 @@ public:
    * @param attributes 字段
    */
   RC create(const char *path, const char *name, const char *base_dir, int attribute_count, const AttrInfo attributes[]);
-  RC drop(const char *path);
+
+  RC drop(const char *path, const char *base_dir);
 
   /**
    * 打开一个表
@@ -56,6 +57,7 @@ public:
   RC insert_record(Trx *trx, int value_num, const Value *values);
   RC update_record(Trx *trx, const char *attribute_name, const Value *value, int condition_num,
       const Condition conditions[], int *updated_count);
+  RC update_record(Trx *trx, Record *record, const char *attribute_name, const Value *value);
   RC delete_record(Trx *trx, ConditionFilter *filter, int *deleted_count);
   RC delete_record(Trx *trx, Record *record);
 
@@ -66,11 +68,12 @@ public:
 
   RC get_record_scanner(RecordFileScanner &scanner);
 
+  bool isIndex(const char *attribute_name);
+
   RecordFileHandler *record_handler() const
   {
     return record_handler_;
   }
-
 
 public:
   const char *name() const;
@@ -101,6 +104,7 @@ private:
 
   RC insert_entry_of_indexes(const char *record, const RID &rid);
   RC delete_entry_of_indexes(const char *record, const RID &rid, bool error_on_not_exists);
+  RC update_entry_of_indexes(const char *record, const RID &rid);
 
 private:
   RC init_record_handler(const char *base_dir);

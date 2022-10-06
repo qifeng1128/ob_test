@@ -222,7 +222,7 @@ public:
    */
   RC flush_all_pages();
 
-  std::string file_name()const{return file_name_;}
+  std::string file_name() const {return file_name_;}
 
 protected:
   RC allocate_frame(Frame **buf);

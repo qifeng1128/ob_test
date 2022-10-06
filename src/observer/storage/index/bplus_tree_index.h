@@ -26,9 +26,11 @@ public:
   RC create(const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta);
   RC open(const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta);
   RC close();
+  RC drop() override;
 
   RC insert_entry(const char *record, const RID *rid) override;
   RC delete_entry(const char *record, const RID *rid) override;
+  RC update_entry(const char *record, const RID *rid) override;
 
   /**
    * 扫描指定范围的数据
